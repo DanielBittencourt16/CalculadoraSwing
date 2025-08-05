@@ -2,95 +2,107 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 public class CalculadoraSwing extends JFrame implements ActionListener {
 
     private JTextField visor;
-    private double numero1 = 0;
-    private String operador = "";
-    private boolean novaOperacao = true;
+    private double num1, num2, resultado;
+    private String operador;
+
 
     public CalculadoraSwing() {
         setTitle("Calculadora");
         setSize(300, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // Centraliza a janela
+        setLayout(new BorderLayout()); // Centraliza a janela
 
+        // Visor
         visor = new JTextField("0");
         visor.setEditable(false);
         visor.setFont(new Font("Arial", Font.BOLD, 24));
-        visor.setHorizontalAlignment(SwingConstants.RIGHT);
+        add(visor, BorderLayout.NORTH);
 
-        JPanel painelBotoes = new JPanel();
-        painelBotoes.setLayout(new GridLayout(4, 4, 5, 5)); // 4x4 com espaçamento
+        // Painel de botões
+        JPanel botoes = new JPanel();
+        botoes.setLayout(new GridLayout(4, 4, 5, 5)); // 4x4 com espaçamento
 
-        String[] botoes = {
-                "7", "8", "9", "/",
-                "4", "5", "6", "*",
-                "1", "2", "3", "-",
-                "0", "C", "=", "+"
+        String[] textos = {
+                "7", "8", "9", "+",
+                "4", "5", "6", "-",
+                "1", "2", "3", "*",
+                "0", ",", "=", "/",
+                "C"
         };
 
-        for (String texto : botoes) {
+        for (String texto : textos) {
             JButton botao = new JButton(texto);
             botao.setFont(new Font("Arial", Font.BOLD, 20));
             botao.addActionListener(this);
-            painelBotoes.add(botao);
+            botoes.add(botao);
         }
 
-        getContentPane().setLayout(new BorderLayout(5, 5));
-        getContentPane().add(visor, BorderLayout.NORTH);
-        getContentPane().add(painelBotoes, BorderLayout.CENTER);
+        add(botoes, BorderLayout.CENTER);
+        setVisible(true);
+
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        String texto = e.getActionCommand();
+        String comando = e.getActionCommand();
 
-        if (texto.matches("[0-9]")) {
-            if (visor.getText().equals("0") || novaOperacao) {
-                visor.setText(texto);
-            } else {
-                visor.setText(visor.getText() + texto);
+        if (comando.matches("[0-9]")) {
+            visor.setText(visor.getText() + comando);
+        } else if (comando.equals(",")) {
+            if (!visor.getText().contains(",")){
+                visor.setText(visor.getText() + ",");
             }
-            novaOperacao = false;
-        } else if (texto.matches("[\\+\\-\\*/]")) {
-            numero1 = Double.parseDouble(visor.getText().replace(",", "."));
-            operador = texto;
-            novaOperacao = true;
-        } else if (texto.equals("=")) {
-            double numero2 = Double.parseDouble(visor.getText().replace(",", "."));
-            double resultado = 0;
-
-            switch (operador) {
-                case "+": resultado = numero1 + numero2; break;
-                case "-": resultado = numero1 - numero2; break;
-                case "*": resultado = numero1 * numero2; break;
-                case "/":
-                    if (numero2 != 0) {
-                        resultado = numero1 / numero2;
-                    } else {
-                        visor.setText("Erro: divisão por 0");
-                        return;
-                    }
-                    break;
+        } else if (comando.matches("[+\\-*/]")) {
+            try {
+                num1 = Double.parseDouble(visor.getText().replace(',', '.'));
+                operador = comando;
+                visor.setText("");
+            } catch (NumberFormatException ex) {
+                visor.setText("Erro");
             }
+        } else if (comando.equals("=")) {
+            try {
+                num2 = Double.parseDouble(visor.getText().replace(',', '.'));
+                switch (operador) {
+                    case "+": resultado = num1 + num2; break;
+                    case "-": resultado = num1 - num2; break;
+                    case "*": resultado = num1 * num2; break;
+                    case "/":
+                        if (num2 == 0) {
+                            visor.setText("Divisão por Zero");
+                            return;
+                        }
+                        resultado = num1 / num2; break;
+                }
 
-            // Substitui o ponto por vírgula para estilo brasileiro
-            visor.setText(String.valueOf(resultado).replace(".", ","));
-            novaOperacao = true;
-        } else if (texto.equals("C")) {
-            visor.setText("0");
-            numero1 = 0;
+                // Verifica se o resultado é inteiro
+                if (resultado == (int) resultado) {
+                    visor.setText(String.valueOf((int) resultado));
+                } else {
+                    DecimalFormatSymbols simbolos = new DecimalFormatSymbols(new Locale("pt", "BR"));
+                    simbolos.setDecimalSeparator(',');
+                    DecimalFormat df = new DecimalFormat("#.##", simbolos);
+                    visor.setText(df.format(resultado));
+                }
+
+            } catch (NumberFormatException ex) {
+                visor.setText("Erro");
+            }
+        } else if (comando.equals("C")) {
+            visor.setText("");
+            num1 = num2 = resultado = 0;
             operador = "";
-            novaOperacao = true;
         }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            CalculadoraSwing calc = new CalculadoraSwing();
-            calc.setVisible(true);
-        });
+            new CalculadoraSwing();
     }
 }
